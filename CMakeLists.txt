@@ -9,7 +9,7 @@ project(
     DESCRIPTION
         "Range-based searchers and range overloads of searcher-based std::search"
     LANGUAGES CXX
-    VERSION 0.1.0
+    VERSION 0.2.0
 )
 
 # [CMAKE.SKIP_TESTS]
