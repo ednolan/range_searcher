@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <algorithm>
-#include <array>
-#include <functional>
-#include <vector>
+#include <beman/range_searcher/config.hpp>
 
 #include <gtest/gtest.h>
+
+#if BEMAN_RANGE_SEARCHER_USE_MODULES()
+
+import std;
+
+#else
+
+    #include <algorithm>
+    #include <array>
+    #include <functional>
+    #include <vector>
+
+#endif
 
 #include <beman/range_searcher/searcher.hpp>
 

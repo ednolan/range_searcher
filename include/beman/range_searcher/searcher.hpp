@@ -3,22 +3,34 @@
 #ifndef BEMAN_RANGE_SEARCHER_SEARCHER_HPP
 #define BEMAN_RANGE_SEARCHER_SEARCHER_HPP
 
-#include <algorithm>
-#include <array>
-#include <functional>
-#include <iterator>
-#include <limits>
-#include <memory>
-#include <ranges>
-#include <type_traits>
-#include <unordered_map>
+#include <beman/range_searcher/config.hpp>
+
+#if BEMAN_RANGE_SEARCHER_USE_MODULES() && !defined(BEMAN_RANGE_SEARCHER_INCLUDED_FROM_INTERFACE_UNIT)
+
+import beman.range_searcher;
+
+#else
+
+    #if !BEMAN_RANGE_SEARCHER_USE_MODULES()
+
+        #include <algorithm>
+        #include <array>
+        #include <functional>
+        #include <iterator>
+        #include <limits>
+        #include <memory>
+        #include <ranges>
+        #include <type_traits>
+        #include <unordered_map>
+
+    #endif // !BEMAN_RANGE_SEARCHER_USE_MODULES()
 
 namespace beman::range_searcher {
 
 namespace detail {
 
 template <std::indirectly_readable I, std::indirectly_regular_unary_invocable<I> Proj>
-using projected_value_t = std::remove_cvref_t<std::invoke_result_t<Proj&, std::iter_value_t<I>&>>;
+using projected_value_t = std::remove_cvref_t<std::invoke_result_t<Proj&, std::iter_value_t<I>&> >;
 
 // The following is directly copied from libc++ <include/functional/boyer_moore_searcher.h>
 // With modification to support projection
@@ -36,7 +48,7 @@ class BMSkipTable<Key, Value, Hash, BinaryPredicate, false> {
     std::unordered_map<Key, Value, Hash, BinaryPredicate> table_;
 
   public:
-    explicit BMSkipTable(size_t sz, value_type default_value, Hash hash, BinaryPredicate pred)
+    explicit BMSkipTable(std::size_t sz, value_type default_value, Hash hash, BinaryPredicate pred)
         : default_value_(default_value), table_(sz, hash, pred) {}
 
     void insert(const key_type& key, value_type val) { table_[key] = val; }
@@ -59,7 +71,7 @@ class BMSkipTable<Key, Value, Hash, BinaryPredicate, true> {
     static_assert(std::numeric_limits<unsigned_key_type>::max() < 256);
 
   public:
-    explicit BMSkipTable(size_t, value_type default_value, Hash, BinaryPredicate) {
+    explicit BMSkipTable(std::size_t, value_type default_value, Hash, BinaryPredicate) {
         std::fill_n(table_.data(), table_.size(), default_value);
     }
 
@@ -84,13 +96,13 @@ class hash_wrapper {
 
 template <class Searcher, class I, class S, class P = std::identity>
 concept searchable = std::copyable<Searcher> && std::invocable<Searcher, I, S, P> &&
-                     std::ranges::forward_range<std::invoke_result_t<Searcher, I, S, P>>;
+                     std::ranges::forward_range<std::invoke_result_t<Searcher, I, S, P> >;
 
 namespace ranges {
 
-template <std::ranges::forward_range                                          R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity>
+template <std::ranges::forward_range                                           R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity>
 class default_searcher {
   public:
     constexpr default_searcher(std::ranges::iterator_t<R> pat_first,
@@ -125,16 +137,16 @@ class default_searcher {
     [[no_unique_address]] Proj                       proj_;      // exposition only
 };
 
-template <std::ranges::forward_range                                          R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity>
+template <std::ranges::forward_range                                           R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity>
 default_searcher(R&&, Pred = {}, Proj = {}) -> default_searcher<std::remove_reference_t<R>, Pred, Proj>;
 
-template <std::ranges::random_access_range                                    R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity,
-          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj>>>
-    requires std::semiregular<std::ranges::range_value_t<R>>
+template <std::ranges::random_access_range                                     R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity,
+          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj> > >
+    requires std::semiregular<std::ranges::range_value_t<R> >
 class boyer_moore_searcher {
   private:
     using difference_type = std::ranges::range_difference_t<R>;
@@ -144,8 +156,8 @@ class boyer_moore_searcher {
                                                 detail::hash_wrapper<Hash, Proj>,
                                                 Pred,
                                                 std::is_integral_v<value_type> && sizeof(value_type) == 1 &&
-                                                    std::is_same_v<Hash, std::hash<value_type>> &&
-                                                    std::is_same_v<Pred, std::ranges::equal_to>>;
+                                                    std::is_same_v<Hash, std::hash<value_type> > &&
+                                                    std::is_same_v<Pred, std::ranges::equal_to> >;
 
   public:
     boyer_moore_searcher(std::ranges::iterator_t<R> pat_first,
@@ -181,9 +193,9 @@ class boyer_moore_searcher {
     template <std::random_access_iterator I2, std::sentinel_for<I2> S2, class Proj2 = std::identity>
         requires std::indirectly_comparable<I2, std::ranges::iterator_t<R>, Pred, Proj2, Proj>
     std::ranges::subrange<I2> operator()(I2 first, S2 last, Proj2 proj2 = {}) const {
-        static_assert(
-            std::is_same_v<std::remove_cvref_t<value_type>, std::remove_cvref_t<detail::projected_value_t<I2, Proj2>>>,
-            "Corpus and Pattern iterators must point to the same type");
+        static_assert(std::is_same_v<std::remove_cvref_t<value_type>,
+                                     std::remove_cvref_t<detail::projected_value_t<I2, Proj2> > >,
+                      "Corpus and Pattern iterators must point to the same type");
         if (first == last)
             return {first, last};
         if (pat_first_ == pat_last_)
@@ -234,12 +246,12 @@ class boyer_moore_searcher {
 
     template <typename I2, typename S2, typename Container>
     static void compute_bm_prefix(I2 first, S2 last, Pred pred, Proj proj, Container& prefix) {
-        const size_t count = last - first;
+        const std::size_t count = last - first;
 
-        prefix[0] = 0;
-        size_t k  = 0;
+        prefix[0]     = 0;
+        std::size_t k = 0;
 
-        for (size_t i = 1; i != count; ++i) {
+        for (std::size_t i = 1; i != count; ++i) {
             while (k > 0 && !pred(std::invoke(proj, first[k]), std::invoke(proj, first[i])))
                 k = prefix[k - 1];
 
@@ -250,7 +262,7 @@ class boyer_moore_searcher {
     }
 
     void build_suffix_table(std::ranges::iterator_t<R> first, std::ranges::sentinel_t<R> last, Pred pred, Proj proj) {
-        const size_t count = last - first;
+        const std::size_t count = last - first;
 
         if (count == 0)
             return;
@@ -258,14 +270,14 @@ class boyer_moore_searcher {
         auto scratch = std::make_unique<difference_type[]>(count);
 
         compute_bm_prefix(first, last, pred, proj, scratch);
-        for (size_t i = 0; i <= count; ++i)
+        for (std::size_t i = 0; i <= count; ++i)
             suffix_[i] = count - scratch[count - 1];
 
-        using ReverseIter = std::reverse_iterator<std::ranges::iterator_t<R>>;
+        using ReverseIter = std::reverse_iterator<std::ranges::iterator_t<R> >;
         compute_bm_prefix(ReverseIter(last), ReverseIter(first), pred, proj, scratch);
 
-        for (size_t i = 0; i != count; ++i) {
-            const size_t          j = count - scratch[i];
+        for (std::size_t i = 0; i != count; ++i) {
+            const std::size_t     j = count - scratch[i];
             const difference_type k = i - scratch[i] + 1;
 
             if (suffix_[j] > k)
@@ -274,19 +286,19 @@ class boyer_moore_searcher {
     }
 };
 
-template <std::ranges::random_access_range                                    R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity,
-          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj>>>
-    requires std::semiregular<std::ranges::range_value_t<R>>
+template <std::ranges::random_access_range                                     R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity,
+          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj> > >
+    requires std::semiregular<std::ranges::range_value_t<R> >
 boyer_moore_searcher(R&&, Pred = {}, Proj = {}, Hash = {})
     -> boyer_moore_searcher<std::remove_reference_t<R>, Pred, Proj, Hash>;
 
-template <std::ranges::random_access_range                                    R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity,
-          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj>>>
-    requires std::semiregular<std::ranges::range_value_t<R>>
+template <std::ranges::random_access_range                                     R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity,
+          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj> > >
+    requires std::semiregular<std::ranges::range_value_t<R> >
 class boyer_moore_horspool_searcher {
   private:
     using difference_type = std::ranges::range_difference_t<R>;
@@ -296,8 +308,8 @@ class boyer_moore_horspool_searcher {
                                                 detail::hash_wrapper<Hash, Proj>,
                                                 Pred,
                                                 std::is_integral_v<value_type> && sizeof(value_type) == 1 &&
-                                                    std::is_same_v<Hash, std::hash<value_type>> &&
-                                                    std::is_same_v<Pred, std::ranges::equal_to>>;
+                                                    std::is_same_v<Hash, std::hash<value_type> > &&
+                                                    std::is_same_v<Pred, std::ranges::equal_to> >;
 
   public:
     boyer_moore_horspool_searcher(std::ranges::iterator_t<R> pat_first,
@@ -335,9 +347,9 @@ class boyer_moore_horspool_searcher {
     template <std::random_access_iterator I2, std::sentinel_for<I2> S2, class Proj2 = std::identity>
         requires std::indirectly_comparable<I2, std::ranges::iterator_t<R>, Pred, Proj2, Proj>
     std::ranges::subrange<I2> operator()(I2 first, S2 last, Proj2 proj2 = {}) const {
-        static_assert(
-            std::is_same_v<std::remove_cvref_t<value_type>, std::remove_cvref_t<detail::projected_value_t<I2, Proj2>>>,
-            "Corpus and Pattern iterators must point to the same type");
+        static_assert(std::is_same_v<std::remove_cvref_t<value_type>,
+                                     std::remove_cvref_t<detail::projected_value_t<I2, Proj2> > >,
+                      "Corpus and Pattern iterators must point to the same type");
         if (first == last)
             return {first, last};
         if (pat_first_ == pat_last_)
@@ -380,11 +392,11 @@ class boyer_moore_horspool_searcher {
     }
 };
 
-template <std::ranges::random_access_range                                    R,
-          std::copy_constructible                                             Pred = std::ranges::equal_to,
-          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R>> Proj = std::identity,
-          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj>>>
-    requires std::semiregular<std::ranges::range_value_t<R>>
+template <std::ranges::random_access_range                                     R,
+          std::copy_constructible                                              Pred = std::ranges::equal_to,
+          std::indirectly_regular_unary_invocable<std::ranges::iterator_t<R> > Proj = std::identity,
+          class Hash = std::hash<detail::projected_value_t<std::ranges::iterator_t<R>, Proj> > >
+    requires std::semiregular<std::ranges::range_value_t<R> >
 boyer_moore_horspool_searcher(R&&, Pred = {}, Proj = {}, Hash = {})
     -> boyer_moore_horspool_searcher<std::remove_reference_t<R>, Pred, Proj, Hash>;
 
@@ -416,5 +428,8 @@ constexpr bool contains_subrange(R&& r, const Searcher& searcher, Proj proj = {}
 } // namespace ranges
 
 } // namespace beman::range_searcher
+
+#endif // #if BEMAN_RANGE_SEARCHER_USE_MODULES() &&
+       // !defined(BEMAN_RANGE_SEARCHER_INCLUDED_FROM_INTERFACE_UNIT)
 
 #endif // BEMAN_RANGE_SEARCHER_SEARCHER_HPP

@@ -1,9 +1,21 @@
-#include <functional>
-#include <iostream>
-#include <string>
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#if __cpp_lib_print >= 202207L
-    #include <print>
+#include <beman/range_searcher/config.hpp>
+
+#if BEMAN_RANGE_SEARCHER_USE_MODULES()
+
+import std;
+
+#else
+
+    #include <functional>
+    #include <iostream>
+    #include <string>
+
+    #if __cpp_lib_print >= 202207L
+        #include <print>
+    #endif
+
 #endif
 
 #include <beman/range_searcher/searcher.hpp>
@@ -35,20 +47,20 @@ int main() {
     branges::boyer_moore_searcher searcher(needle);
     auto                          result = branges::search(haystack, searcher);
     print(std::ranges::subrange{haystack.begin(), result.begin()});
-    print("[");
+    std::cout << '[';
     print(result);
-    print("]");
+    std::cout << ']';
     println(std::ranges::subrange{result.end(), haystack.end()});
     // Output: a quick brown fox [jump]s over the lazy dog
 
     if (branges::contains_subrange(haystack, branges::boyer_moore_horspool_searcher{needle}))
-        println("jump found!");
+        std::cout << "jump found!\n";
     else
-        println("jump not found!");
+        std::cout << "jump not found!\n";
     if (branges::contains_subrange(haystack, branges::boyer_moore_horspool_searcher{"run"}))
-        println("run found!");
+        std::cout << "run found!\n";
     else
-        println("run not found!");
+        std::cout << "run not found!\n";
 
     return 0;
 }

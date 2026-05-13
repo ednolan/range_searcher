@@ -1,10 +1,22 @@
-#include <functional>
-#include <iostream>
-#include <string>
-#include <string_view>
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#if __cpp_lib_print >= 202207L
-    #include <print>
+#include <beman/range_searcher/config.hpp>
+
+#if BEMAN_RANGE_SEARCHER_USE_MODULES()
+
+import std;
+
+#else
+
+    #include <functional>
+    #include <iostream>
+    #include <string>
+    #include <string_view>
+
+    #if __cpp_lib_print >= 202207L
+        #include <print>
+    #endif
+
 #endif
 
 #include <beman/range_searcher/searcher.hpp>
@@ -34,22 +46,22 @@ int main() {
     std::string needle   = "Jump";
 
     if (branges::contains_subrange(haystack, branges::default_searcher{needle}))
-        println("Jump found!");
+        std::cout << "Jump found!\n";
     else
-        println("Jump not found!");
+        std::cout << "Jump not found!\n";
     if (branges::contains_subrange(haystack, branges::boyer_moore_searcher{needle, [](auto a, auto b) {
                                                                                return std::tolower(a) ==
                                                                                       std::tolower(b);
                                                                            }}))
-        println("Jump (case-insensitive) found!");
+        std::cout << "Jump (case-insensitive) found!\n";
     else
-        println("Jump (case-insensitive) not found!");
+        std::cout << "Jump (case-insensitive) not found!\n";
     if (branges::contains_subrange(haystack, branges::boyer_moore_horspool_searcher{needle, {}, [](auto c) -> char {
                                                                                         return std::tolower(c);
                                                                                     }}))
-        println("Jump (case-insensitive) found!");
+        std::cout << "Jump (case-insensitive) found!\n";
     else
-        println("Jump (case-insensitive) not found!");
+        std::cout << "Jump (case-insensitive) not found!\n";
 
     auto result = branges::search(
         haystack, branges::boyer_moore_horspool_searcher{"Jumps-Over"}, [](char ch) { return ch == ' ' ? '-' : ch; });

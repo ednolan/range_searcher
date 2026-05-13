@@ -13,4 +13,10 @@ foreach(example ${ALL_EXAMPLES})
         beman.range_searcher.examples.${example}
         PRIVATE beman::range_searcher
     )
+    if(BEMAN_RANGE_SEARCHER_USE_MODULES)
+        set_target_properties(
+            beman.range_searcher.examples.${example}
+            PROPERTIES CXX_MODULE_STD ON
+        )
+    endif()
 endforeach()
